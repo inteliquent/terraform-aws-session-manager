@@ -50,6 +50,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "session_logs_bucket" {
     id     = "archive_after_X_days"
     status = "Enabled"
 
+    filter {}
+
     transition {
       days          = var.log_archive_days
       storage_class = "GLACIER"
