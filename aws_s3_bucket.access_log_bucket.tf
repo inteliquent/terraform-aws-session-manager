@@ -54,6 +54,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "access_log_bucket" {
     id     = "delete_after_X_days"
     status = "Enabled"
 
+    filter {}
+
     expiration {
       days = var.access_log_expire_days
     }
