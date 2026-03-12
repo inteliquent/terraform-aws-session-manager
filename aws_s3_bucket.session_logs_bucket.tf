@@ -8,20 +8,8 @@ resource "aws_s3_bucket" "session_logs_bucket" {
 
 }
 
-# Clear any existing ACL grants before switching to BucketOwnerEnforced.
-resource "null_resource" "clear_session_logs_bucket_acl" {
-  triggers = {
-    bucket = aws_s3_bucket.session_logs_bucket.bucket
-  }
-
-  provisioner "local-exec" {
-    command = "aws s3api put-bucket-acl --bucket ${aws_s3_bucket.session_logs_bucket.bucket} --acl private || true"
-  }
-}
-
 resource "aws_s3_bucket_ownership_controls" "session_logs_bucket" {
-  bucket     = aws_s3_bucket.session_logs_bucket.bucket
-  depends_on = [null_resource.clear_session_logs_bucket_acl]
+  bucket = aws_s3_bucket.session_logs_bucket.bucket
 
   rule {
     object_ownership = "BucketOwnerEnforced"
