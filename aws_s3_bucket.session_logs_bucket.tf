@@ -12,14 +12,36 @@ resource "aws_s3_bucket_ownership_controls" "session_logs_bucket" {
   bucket = aws_s3_bucket.session_logs_bucket.bucket
 
   rule {
-    object_ownership = "ObjectWriter"
+    object_ownership = "BucketOwnerEnforced"
   }
 }
 
-resource "aws_s3_bucket_acl" "session_logs_bucket" {
+resource "aws_s3_bucket_policy" "session_logs_bucket" {
   bucket     = aws_s3_bucket.session_logs_bucket.id
-  acl        = "private"
   depends_on = [aws_s3_bucket_ownership_controls.session_logs_bucket]
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "S3ServerAccessLogsPolicy"
+        Effect = "Allow"
+        Principal = {
+          Service = "logging.s3.amazonaws.com"
+        }
+        Action   = "s3:PutObject"
+        Resource = "${aws_s3_bucket.session_logs_bucket.arn}/log/*"
+        Condition = {
+          ArnLike = {
+            "aws:SourceArn" = "arn:${data.aws_partition.current.partition}:s3:::*"
+          }
+          StringEquals = {
+            "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+          }
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_s3_bucket_versioning" "session_logs_bucket" {

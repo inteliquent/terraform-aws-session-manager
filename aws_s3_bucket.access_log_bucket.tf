@@ -15,14 +15,36 @@ resource "aws_s3_bucket_ownership_controls" "access_log_bucket" {
   bucket = aws_s3_bucket.access_log_bucket.bucket
 
   rule {
-    object_ownership = "ObjectWriter"
+    object_ownership = "BucketOwnerEnforced"
   }
 }
 
-resource "aws_s3_bucket_acl" "access_log_bucket" {
+resource "aws_s3_bucket_policy" "access_log_bucket" {
   bucket     = aws_s3_bucket.access_log_bucket.id
-  acl        = "log-delivery-write"
   depends_on = [aws_s3_bucket_ownership_controls.access_log_bucket]
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "S3ServerAccessLogsPolicy"
+        Effect = "Allow"
+        Principal = {
+          Service = "logging.s3.amazonaws.com"
+        }
+        Action   = "s3:PutObject"
+        Resource = "${aws_s3_bucket.access_log_bucket.arn}/*"
+        Condition = {
+          ArnLike = {
+            "aws:SourceArn" = "arn:${data.aws_partition.current.partition}:s3:::*"
+          }
+          StringEquals = {
+            "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+          }
+        }
+      }
+    ]
+  })
 }
 
 

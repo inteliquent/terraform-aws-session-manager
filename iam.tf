@@ -75,8 +75,6 @@ data "aws_iam_policy_document" "ssm_s3_cwl_access" {
 
     actions = [
       "s3:PutObject",
-      "s3:PutObjectAcl",
-      "s3:PutObjectVersionAcl",
     ]
 
     resources = [
