@@ -11,8 +11,22 @@ resource "aws_s3_bucket" "access_log_bucket" {
 
 }
 
+# Clear any existing ACL grants before switching to BucketOwnerEnforced.
+# AWS blocks the ownership change if non-default ACL grants are present.
+# The || true ensures this is a no-op if the bucket already has BucketOwnerEnforced.
+resource "null_resource" "clear_access_log_bucket_acl" {
+  triggers = {
+    bucket = aws_s3_bucket.access_log_bucket.bucket
+  }
+
+  provisioner "local-exec" {
+    command = "aws s3api put-bucket-acl --bucket ${aws_s3_bucket.access_log_bucket.bucket} --acl private || true"
+  }
+}
+
 resource "aws_s3_bucket_ownership_controls" "access_log_bucket" {
-  bucket = aws_s3_bucket.access_log_bucket.bucket
+  bucket     = aws_s3_bucket.access_log_bucket.bucket
+  depends_on = [null_resource.clear_access_log_bucket_acl]
 
   rule {
     object_ownership = "BucketOwnerEnforced"
